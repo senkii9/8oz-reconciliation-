@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User specific application settings and linked Google Sheets",
+      "type": "object",
+      "properties": {
+        "settings": {
+          "type": "object",
+          "description": "Application preferences and list configurations"
+        },
+        "spreadsheetId": {
+          "type": "string",
+          "description": "The linked Google Sheets Spreadsheet ID"
+        },
+        "spreadsheetUrl": {
+          "type": "string",
+          "description": "The linked Google Sheets URL"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of the last update"
+        }
+      },
+      "required": ["updatedAt"]
+    },
+    "closingLog": {
+      "title": "ClosingLog",
+      "description": "A single daily shift closing reconciliation log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "shiftInfo": { "type": "object" },
+        "payments": { "type": "object" },
+        "drawerOperations": { "type": "object" },
+        "openingFloat": { "type": "number" },
+        "cashCount": { "type": "object" },
+        "cardBreakdown": { "type": "object" },
+        "reconciliation": { "type": "object" },
+        "deposit": { "type": "object" },
+        "isDeletedFromLog": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "userProfile",
+      "description": "User specific settings and spreadsheet links"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "closingLog",
+      "description": "User closing logs for full cross-device synchronization"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Foodics Cash Reconciliation",
+  "description": "A professional Google Sheets and web-based cash reconciliation system for coffee shops using Foodics POS, featuring automated cash counting, historical closing logs, and visual analytics dashboards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

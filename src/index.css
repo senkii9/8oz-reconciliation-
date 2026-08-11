@@ -1,0 +1,363 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700&family=Almarai:wght@400;700&family=Noto+Sans+Arabic:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Thmanyah Display Bold';
+  src: url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2'),
+       local('Thmanyah Display Bold'),
+       local('ThmanyahDisplay-Bold'),
+       local('Cairo-Bold'),
+       local('Cairo');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah Display Bold';
+  src: url('/fonts/ThmanyahDisplay-Regular.woff2') format('woff2'),
+       local('Thmanyah Display'),
+       local('ThmanyahDisplay'),
+       local('Cairo');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/ThmanyahDisplay-Regular.woff2') format('woff2'),
+       local('Thmanyah Display'),
+       local('ThmanyahDisplay'),
+       local('Cairo');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmanyah';
+  src: url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2'),
+       local('Thmanyah Display Bold'),
+       local('ThmanyahDisplay-Bold'),
+       local('Cairo-Bold');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmaniyah';
+  src: url('/fonts/ThmanyahDisplay-Regular.woff2') format('woff2'),
+       local('Thmanyah Display'),
+       local('ThmanyahDisplay'),
+       local('Cairo');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Thmaniyah';
+  src: url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2'),
+       local('Thmanyah Display Bold'),
+       local('ThmanyahDisplay-Bold'),
+       local('Cairo-Bold');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Expo Sans';
+  src: url('https://db.onlinewebfonts.com/t/790beea44eb98b049d501db67ee784f1.woff2') format('woff2'),
+       local('Expo Sans'),
+       local('ExpoSans'),
+       local('Expo-Sans'),
+       local('Inter');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Expo Sans';
+  src: url('https://db.onlinewebfonts.com/t/20e2e2bf4b14d5ce2908f5fc283ffb1b.woff2') format('woff2'),
+       local('Expo Sans Bold'),
+       local('ExpoSans-Bold'),
+       local('Expo-Sans-Bold'),
+       local('Inter-Bold');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'The year of handicraft';
+  src: local('The year of handicraft'),
+       local('Year of Handicrafts'),
+       local('MOC Handicrafts'),
+       local('MOC_Handicrafts'),
+       local('MOC Handicrafts Regular'),
+       local('Handicrafts'),
+       url('/fonts/ThmanyahDisplay-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'The year of handicraft';
+  src: local('The year of handicraft Bold'),
+       local('Year of Handicrafts Bold'),
+       local('MOC Handicrafts Bold'),
+       local('MOC_Handicrafts Bold'),
+       local('Handicrafts Bold'),
+       url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Thmaniyah", "Thmanyah", "IBM Plex Sans Arabic", "Expo Arabic", "Inter", "Tajawal", "Almarai", "Noto Sans Arabic", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-arabic: "Thmaniyah", "Thmanyah", "IBM Plex Sans Arabic", "Tajawal", "Almarai", "Noto Sans Arabic", sans-serif;
+  --font-english: "Thmaniyah", "Thmanyah", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Force 'Thmaniyah' and the approved system font family stack globally on all interactive and display elements for both letters and digits */
+body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, div, td, th {
+  font-family: "Thmaniyah", "Thmanyah", "IBM Plex Sans Arabic", "Expo Arabic", "Inter", "Tajawal", "Almarai", "Noto Sans Arabic", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Fix Arabic disconnected letters issue caused by Tailwind tracking classes */
+[dir="rtl"] .tracking-wider,
+[dir="rtl"] .tracking-widest,
+[dir="rtl"] .tracking-wide {
+  letter-spacing: normal !important;
+}
+
+/* Custom fade-in for smooth navigation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Print Specific Rules for High Precision PDF and Receipts */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    font-family: "Thmanyah", "Thmanyah Display Bold", "Expo Sans", sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide headers, footers, navigation, buttons, and utility zones */
+  header,
+  footer,
+  nav,
+  button,
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Style inputs, select dropdowns and textareas as clean static text when printing */
+  input,
+  select,
+  textarea,
+  input[type="text"],
+  input[type="number"],
+  input[type="date"] {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    font-family: inherit !important;
+    box-shadow: none !important;
+    outline: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    display: inline-block !important;
+    width: auto !important;
+  }
+
+  /* For dates and inputs we want to display as block or full width if needed */
+  .w-full {
+    width: 100% !important;
+  }
+
+  /* Standard page layout on printing: Use modern A4 with balanced spacing */
+  @page {
+    size: A4 portrait;
+    margin: 1.2cm !important;
+  }
+
+  /* Maintain grid columns without screen constraints */
+  .grid {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+
+  .lg\:grid-cols-12 {
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  }
+
+  .lg\:col-span-3 {
+    grid-column: span 3 / span 3 !important;
+  }
+
+  .lg\:col-span-5 {
+    grid-column: span 5 / span 5 !important;
+  }
+
+  .lg\:col-span-4 {
+    grid-column: span 4 / span 4 !important;
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Make sure spacing, borders and colors print cleanly */
+  .bg-white {
+    background-color: #ffffff !important;
+  }
+
+  .bg-slate-50, .bg-slate-50\/70, .bg-slate-50\/30 {
+    background-color: #f8fafc !important;
+  }
+
+  .bg-blue-50 {
+    background-color: #eff6ff !important;
+  }
+
+  .bg-emerald-50 {
+    background-color: #ecfdf5 !important;
+  }
+
+  .bg-amber-50 {
+    background-color: #fffbeb !important;
+  }
+
+  .bg-rose-50 {
+    background-color: #fff1f2 !important;
+  }
+
+  .bg-indigo-50 {
+    background-color: #e0e7ff !important;
+  }
+
+  .border {
+    border-width: 1px !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .border-slate-100 {
+    border-color: #f1f5f9 !important;
+  }
+
+  .border-slate-200 {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Specific handling of the modal print container (Daily closing receipt / details view) */
+  /* If a fixed modal container is active, hide everything else and print only the modal cleanly */
+  body:has(.fixed.inset-0) main,
+  body:has(.fixed.inset-0) header {
+    display: none !important;
+  }
+
+  .fixed.inset-0 {
+    position: static !important;
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+
+  .fixed.inset-0 > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  /* Make inputs show values as static text */
+  input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-weight: bold !important;
+    font-family: inherit !important;
+  }
+
+  /* Maintain layout colors and text contrast */
+  .text-slate-900, .text-slate-950, .text-slate-800 {
+    color: #0f172a !important;
+  }
+
+  .text-slate-500, .text-slate-400 {
+    color: #475569 !important;
+  }
+
+  .text-blue-600 {
+    color: #2563eb !important;
+  }
+
+  .text-emerald-600, .text-emerald-700 {
+    color: #059669 !important;
+  }
+
+  .text-amber-600 {
+    color: #d97706 !important;
+  }
+
+  .text-rose-600, .text-red-600 {
+    color: #dc2626 !important;
+  }
+
+  /* Ensure page breaks inside sections are avoided for maximum visual precision */
+  section, .rounded-2xl, .p-5, .p-4 {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Align RTL correctly on printed sheets */
+  [dir="rtl"] {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+
+  [dir="rtl"] .text-right {
+    text-align: left !important;
+  }
+
+  [dir="rtl"] .text-left {
+    text-align: right !important;
+  }
+}
