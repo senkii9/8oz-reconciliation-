@@ -44,13 +44,34 @@ import {
   CheckCircle,
   XCircle,
   ShieldCheck,
-  LogOut
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export default function App() {
   // 1. Navigation & Tab State
   const [activeTab, setActiveTab] = useState<'closing' | 'logs' | 'dashboard' | 'settings'>('closing');
   const [language, setLanguage] = useState<Language>('en');
+
+  // 1b. Theme (light / dark) state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof document !== 'undefined' && document.documentElement.classList.contains('dark')) {
+      return 'dark';
+    }
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    if (saved === 'light' || saved === 'dark') return saved;
+    return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
 
   // 2. Local Database State
   const [logs, setLogs] = useState<DailyClosingRecord[]>([]);
@@ -799,6 +820,14 @@ export default function App() {
 
           {/* Google Sheets integration widget */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              title={language === 'ar' ? (theme === 'dark' ? 'الوضع العادي' : 'الوضع الليلي') : (theme === 'dark' ? 'Light mode' : 'Dark mode')}
+              className="inline-flex items-center justify-center w-8 h-8 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition cursor-pointer"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+
             <button
               onClick={toggleLanguage}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 rounded-lg transition cursor-pointer"

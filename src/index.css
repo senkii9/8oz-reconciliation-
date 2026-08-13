@@ -1,6 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700&family=Almarai:wght@400;700&family=Noto+Sans+Arabic:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
+/* Class-based dark mode (toggled via .dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @font-face {
   font-family: 'Thmanyah Display Bold';
   src: url('/fonts/ThmanyahDisplay-Bold.woff2') format('woff2'),
@@ -146,6 +149,192 @@ body, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6, div, td,
 
 .animate-fade-in {
   animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* ==========================================================================
+   Dark Mode
+   Global recolor of the existing slate/blue/emerald/amber/rose Tailwind
+   utility palette when the <html> element carries the `.dark` class.
+   Screens only — @media print below always forces light output.
+   ========================================================================== */
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  background-color: #0b1220;
+}
+
+/* Fallback catch-all for any opacity-variant utility not explicitly listed
+   below (e.g. border-slate-200/60, bg-blue-50/50). Specific rules further
+   down override these where present. */
+.dark [class*="bg-white/"] { background-color: rgb(19 28 46 / 0.9) !important; }
+.dark [class*="bg-slate-50/"] { background-color: rgb(15 23 42 / 0.5) !important; }
+.dark [class*="bg-slate-100/"] { background-color: rgb(27 38 59 / 0.5) !important; }
+.dark [class*="bg-slate-900/"] { background-color: rgb(2 6 23 / 0.6) !important; }
+.dark [class*="bg-slate-950/"] { background-color: rgb(2 6 23 / 0.6) !important; }
+.dark [class*="bg-blue-50/"] { background-color: rgb(37 99 235 / 0.1) !important; }
+.dark [class*="bg-emerald-50/"] { background-color: rgb(16 185 129 / 0.1) !important; }
+.dark [class*="bg-amber-50/"] { background-color: rgb(245 158 11 / 0.1) !important; }
+.dark [class*="bg-rose-50/"] { background-color: rgb(244 63 94 / 0.1) !important; }
+.dark [class*="bg-red-50/"] { background-color: rgb(239 68 68 / 0.1) !important; }
+.dark [class*="bg-red-100/"] { background-color: rgb(239 68 68 / 0.15) !important; }
+.dark [class*="bg-indigo-50/"] { background-color: rgb(99 102 241 / 0.1) !important; }
+.dark [class*="border-slate-50/"] { border-color: rgb(27 38 59 / 0.5) !important; }
+.dark [class*="border-slate-100/"] { border-color: rgb(30 41 59 / 0.5) !important; }
+.dark [class*="border-slate-200/"] { border-color: rgb(42 59 87 / 0.6) !important; }
+.dark [class*="border-slate-300/"] { border-color: rgb(51 65 85 / 0.7) !important; }
+.dark [class*="border-amber-200/"] { border-color: rgb(245 158 11 / 0.35) !important; }
+.dark [class*="border-emerald-200/"] { border-color: rgb(16 185 129 / 0.35) !important; }
+.dark [class*="border-rose-200/"] { border-color: rgb(244 63 94 / 0.35) !important; }
+.dark [class*="ring-blue-50/"] { --tw-ring-color: rgb(37 99 235 / 0.2) !important; }
+.dark [class*="ring-blue-500/"] { --tw-ring-color: rgb(59 130 246 / 0.3) !important; }
+
+/* Surfaces */
+.dark .bg-white { background-color: #131c2e !important; }
+.dark .bg-white\/95 { background-color: rgb(19 28 46 / 0.95) !important; }
+.dark .bg-white\/10 { background-color: rgb(255 255 255 / 0.06) !important; }
+.dark .bg-slate-50 { background-color: #0b1220 !important; }
+.dark .bg-slate-50\/50 { background-color: rgb(15 23 42 / 0.5) !important; }
+.dark .bg-slate-50\/70 { background-color: rgb(15 23 42 / 0.7) !important; }
+.dark .bg-slate-50\/40 { background-color: rgb(15 23 42 / 0.4) !important; }
+.dark .bg-slate-50\/30 { background-color: rgb(15 23 42 / 0.3) !important; }
+.dark .bg-slate-50\/20 { background-color: rgb(15 23 42 / 0.2) !important; }
+.dark .bg-slate-100 { background-color: #1b263b !important; }
+.dark .bg-slate-100\/50 { background-color: rgb(27 38 59 / 0.5) !important; }
+.dark .bg-slate-200 { background-color: #24324a !important; }
+.dark .bg-slate-900 { background-color: #f8fafc !important; }
+.dark .bg-slate-900\/60 { background-color: rgb(2 6 23 / 0.6) !important; }
+.dark .bg-slate-900\/65 { background-color: rgb(2 6 23 / 0.65) !important; }
+.dark .bg-slate-950 { background-color: #020617 !important; }
+.dark .bg-slate-950\/60 { background-color: rgb(2 6 23 / 0.6) !important; }
+
+/* Brand / accent surfaces */
+.dark .bg-blue-50 { background-color: rgb(37 99 235 / 0.12) !important; }
+.dark .bg-blue-50\/10 { background-color: rgb(37 99 235 / 0.08) !important; }
+.dark .bg-blue-50\/50 { background-color: rgb(37 99 235 / 0.1) !important; }
+.dark .bg-blue-100 { background-color: rgb(37 99 235 / 0.2) !important; }
+.dark .bg-blue-500 { background-color: #3b82f6 !important; }
+.dark .bg-blue-600 { background-color: #2563eb !important; }
+.dark .bg-blue-700 { background-color: #1d4ed8 !important; }
+.dark .bg-emerald-50 { background-color: rgb(16 185 129 / 0.12) !important; }
+.dark .bg-emerald-50\/50 { background-color: rgb(16 185 129 / 0.1) !important; }
+.dark .bg-emerald-100 { background-color: rgb(16 185 129 / 0.2) !important; }
+.dark .bg-emerald-500 { background-color: #10b981 !important; }
+.dark .bg-amber-50 { background-color: rgb(245 158 11 / 0.12) !important; }
+.dark .bg-amber-50\/50 { background-color: rgb(245 158 11 / 0.1) !important; }
+.dark .bg-amber-100 { background-color: rgb(245 158 11 / 0.2) !important; }
+.dark .bg-amber-500 { background-color: #f59e0b !important; }
+.dark .bg-rose-50 { background-color: rgb(244 63 94 / 0.12) !important; }
+.dark .bg-rose-50\/50 { background-color: rgb(244 63 94 / 0.1) !important; }
+.dark .bg-rose-100 { background-color: rgb(244 63 94 / 0.2) !important; }
+.dark .bg-rose-500 { background-color: #f43f5e !important; }
+.dark .bg-rose-600 { background-color: #e11d48 !important; }
+.dark .bg-rose-700 { background-color: #be123c !important; }
+.dark .bg-red-50 { background-color: rgb(239 68 68 / 0.12) !important; }
+.dark .bg-red-50\/10 { background-color: rgb(239 68 68 / 0.08) !important; }
+.dark .bg-red-50\/20 { background-color: rgb(239 68 68 / 0.1) !important; }
+.dark .bg-red-100\/30 { background-color: rgb(239 68 68 / 0.15) !important; }
+.dark .bg-red-500 { background-color: #ef4444 !important; }
+.dark .bg-indigo-50 { background-color: rgb(99 102 241 / 0.12) !important; }
+.dark .bg-indigo-50\/50 { background-color: rgb(99 102 241 / 0.1) !important; }
+.dark .bg-indigo-500 { background-color: #6366f1 !important; }
+.dark .bg-purple-50 { background-color: rgb(168 85 247 / 0.12) !important; }
+.dark .bg-purple-100 { background-color: rgb(168 85 247 / 0.2) !important; }
+.dark .bg-teal-50 { background-color: rgb(20 184 166 / 0.12) !important; }
+.dark .bg-cyan-50 { background-color: rgb(6 182 212 / 0.12) !important; }
+.dark .bg-orange-50 { background-color: rgb(249 115 22 / 0.12) !important; }
+.dark .bg-yellow-50 { background-color: rgb(234 179 8 / 0.12) !important; }
+
+/* Text */
+.dark .text-slate-950 { color: #f8fafc !important; }
+.dark .text-slate-900 { color: #f1f5f9 !important; }
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .text-slate-700 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #94a3b8 !important; }
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-400 { color: #64748b !important; }
+.dark .text-white { color: #f8fafc !important; }
+.dark .text-blue-500 { color: #60a5fa !important; }
+.dark .text-blue-600 { color: #60a5fa !important; }
+.dark .text-blue-700 { color: #93c5fd !important; }
+.dark .text-blue-800 { color: #93c5fd !important; }
+.dark .text-blue-900 { color: #bfdbfe !important; }
+.dark .text-blue-950 { color: #dbeafe !important; }
+.dark .text-emerald-500 { color: #34d399 !important; }
+.dark .text-emerald-600 { color: #34d399 !important; }
+.dark .text-emerald-700 { color: #6ee7b7 !important; }
+.dark .text-emerald-800 { color: #a7f3d0 !important; }
+.dark .text-amber-500 { color: #fbbf24 !important; }
+.dark .text-amber-600 { color: #fbbf24 !important; }
+.dark .text-amber-700 { color: #fcd34d !important; }
+.dark .text-rose-500 { color: #fb7185 !important; }
+.dark .text-rose-600 { color: #fb7185 !important; }
+.dark .text-rose-700 { color: #fda4af !important; }
+.dark .text-rose-800 { color: #fecdd3 !important; }
+.dark .text-red-500 { color: #f87171 !important; }
+.dark .text-red-600 { color: #f87171 !important; }
+.dark .text-red-700 { color: #fca5a5 !important; }
+.dark .text-indigo-500 { color: #818cf8 !important; }
+.dark .text-indigo-600 { color: #818cf8 !important; }
+.dark .text-indigo-700 { color: #a5b4fc !important; }
+.dark .text-green-600 { color: #4ade80 !important; }
+
+/* Borders */
+.dark .border-slate-50 { border-color: #1b263b !important; }
+.dark .border-slate-100 { border-color: #1e293b !important; }
+.dark .border-slate-150 { border-color: #1e293b !important; }
+.dark .border-slate-200 { border-color: #2a3b57 !important; }
+.dark .border-slate-200\/50 { border-color: rgb(42 59 87 / 0.5) !important; }
+.dark .border-slate-300 { border-color: #334155 !important; }
+.dark .border-white { border-color: #334155 !important; }
+.dark .border-blue-50 { border-color: rgb(37 99 235 / 0.2) !important; }
+.dark .border-blue-100 { border-color: rgb(37 99 235 / 0.25) !important; }
+.dark .border-blue-200 { border-color: rgb(37 99 235 / 0.35) !important; }
+.dark .border-blue-500 { border-color: #3b82f6 !important; }
+.dark .border-blue-600 { border-color: #2563eb !important; }
+.dark .border-emerald-50 { border-color: rgb(16 185 129 / 0.2) !important; }
+.dark .border-emerald-100 { border-color: rgb(16 185 129 / 0.25) !important; }
+.dark .border-emerald-200 { border-color: rgb(16 185 129 / 0.35) !important; }
+.dark .border-amber-100 { border-color: rgb(245 158 11 / 0.25) !important; }
+.dark .border-amber-200 { border-color: rgb(245 158 11 / 0.35) !important; }
+.dark .border-rose-100 { border-color: rgb(244 63 94 / 0.25) !important; }
+.dark .border-rose-200 { border-color: rgb(244 63 94 / 0.35) !important; }
+.dark .border-red-100 { border-color: rgb(239 68 68 / 0.25) !important; }
+.dark .border-red-200 { border-color: rgb(239 68 68 / 0.35) !important; }
+.dark .border-red-500 { border-color: #ef4444 !important; }
+.dark .border-indigo-50 { border-color: rgb(99 102 241 / 0.2) !important; }
+.dark .border-indigo-200 { border-color: rgb(99 102 241 / 0.35) !important; }
+
+/* Divide / ring utilities that follow the same slate scale */
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1e293b !important; }
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #2a3b57 !important; }
+.dark .ring-slate-200 { --tw-ring-color: #2a3b57 !important; }
+
+/* Scrollbars stay legible on dark surfaces */
+.dark ::-webkit-scrollbar-track { background-color: #0b1220; }
+.dark ::-webkit-scrollbar-thumb { background-color: #334155; }
+
+/* Inputs/selects keep native dark chrome (calendar/spinner icons) legible */
+.dark input,
+.dark select,
+.dark textarea {
+  color-scheme: dark;
+}
+
+/* Everything under a print container is always forced back to light,
+   even if the app is in dark mode, so printed/PDF output is unaffected. */
+@media print {
+  html.dark { color-scheme: light; }
 }
 
 /* Print Specific Rules for High Precision PDF and Receipts */
