@@ -1,8 +1,73 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function callerEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    // The employees array lives inside store/{storeId}.settings.employees
+    function storeDoc(storeId) {
+      return get(/databases/$(database)/documents/store/$(storeId));
+    }
+
+    function isActive(storeId) {
+      return isSignedIn()
+        && storeDoc(storeId).data.settings.employees
+             .filter(e => e.email.lower() == callerEmail() && e.status == 'active')
+             .size() > 0;
+    }
+
+    function isActiveAdmin(storeId) {
+      return isSignedIn()
+        && storeDoc(storeId).data.settings.employees
+             .filter(e => e.email.lower() == callerEmail()
+                       && e.status == 'active'
+                       && (e.role == 'owner' || e.role == 'supervisor'))
+             .size() > 0;
+    }
+
+    match /store/{storeId} {
+      // Anyone signed in may read (needed to resolve their own employee record
+      // and see whether they are pending/suspended before being granted access).
+      allow read: if isSignedIn();
+
+      // Only an active owner/supervisor may modify store settings (employees,
+      // branches, etc). First-ever bootstrap of the document must be done
+      // manually by the owner directly in the Firestore console.
+      allow update: if isActiveAdmin(storeId);
+      allow create: if false;
+      allow delete: if false;
+
+      match /logs/{logId} {
+        allow read: if isActive(storeId);
+        allow create: if isActive(storeId);
+        allow update, delete: if isActiveAdmin(storeId);
+      }
+
+      match /auditLog/{entryId} {
+        // Any active employee may append an audit entry about themselves;
+        // only owners/supervisors can browse the log.
+        allow create: if isActive(storeId)
+                       && request.resource.data.email.lower() == callerEmail();
+        allow read: if isActiveAdmin(storeId);
+        allow update, delete: if false;
+      }
+
+      match /accessRequests/{uid} {
+        // A signed-in user who isn't (yet) an active employee may create/refresh
+        // exactly one request doc about themselves.
+        allow create, update: if isSignedIn()
+                               && request.auth.uid == uid
+                               && request.resource.data.uid == request.auth.uid
+                               && request.resource.data.email.lower() == callerEmail();
+        allow read, delete: if isActiveAdmin(storeId) || (isSignedIn() && request.auth.uid == uid);
+      }
     }
   }
 }

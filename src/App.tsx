@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User, signOut, multiFactor } from 'firebase/auth';
 import {
   getFirestore,
   doc,
@@ -15,11 +15,14 @@ import {
   collection,
   query,
   orderBy,
+  limit,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  addDoc,
+  serverTimestamp
 } from 'firebase/firestore';
 
-import { DailyClosingRecord, AppSettings } from './types';
+import { DailyClosingRecord, AppSettings, AccessRequest, AuditLogEntry } from './types';
 import { DEFAULT_SETTINGS } from './data/defaultSettings';
 import { translations, Language } from './lib/translations';
 import firebaseAppletConfig from '../firebase-applet-config.json';
@@ -30,6 +33,7 @@ import DailyLogTab from './components/DailyLogTab';
 import SettingsTab from './components/SettingsTab';
 import { Login } from './components/Login';
 import DashboardTab from './components/DashboardTab';
+import { MfaEnrollGate } from './components/MfaEnrollGate';
 
 // Icons
 import { 
@@ -89,10 +93,17 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   // 5. Role based access control
-  const [activeRole, setActiveRole] = useState<'owner' | 'supervisor' | 'cashier' | null>('owner');
+  const [activeRole, setActiveRole] = useState<'owner' | 'supervisor' | 'cashier' | null>(null);
   const [activeEmployeeName, setActiveEmployeeName] = useState<string | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+
+  // 5b. Access approval state: null while resolving, 'pending' (not yet an
+  // approved employee), 'suspended' (was approved, access revoked), or
+  // 'active' once the employee record is found with status === 'active'.
+  const [accessState, setAccessState] = useState<'pending' | 'suspended' | 'active' | null>(null);
+  const [mfaChecked, setMfaChecked] = useState(false);
+  const [mfaEnrolled, setMfaEnrolled] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -142,10 +153,15 @@ export default function App() {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
           if (u) {
             setUser(u);
+            setMfaEnrolled(multiFactor(u).enrolledFactors.length > 0);
+            setMfaChecked(true);
           } else {
             setUser(null);
             setActiveRole(null);
             setActiveEmployeeName(null);
+            setAccessState(null);
+            setMfaChecked(false);
+            setMfaEnrolled(false);
           }
         });
         return () => unsubscribe();
@@ -155,50 +171,136 @@ export default function App() {
     }
   }, []);
 
-  // Role assignment based on Firebase User and Settings
+  // Role assignment based on Firebase User and Settings.
+  // STRICT ALLOWLIST: only emails the owner has manually added to
+  // settings.employees with status "active" are granted a role. No account
+  // is ever auto-provisioned. Unknown or non-active accounts are logged as
+  // an access request the owner can review and approve from Settings.
   useEffect(() => {
-    if (user && settings && isSettingsLoaded) {
-      const employee = settings.employees?.find(e => e.email.toLowerCase() === user.email?.toLowerCase());
-      if (employee) {
-        setActiveRole(employee.role);
-        setActiveEmployeeName(employee.name || user.displayName || employee.email);
-        sessionStorage.setItem('foodics_active_role', employee.role);
-      } else if (!settings.employees || settings.employees.length === 0) {
-        // If no employees exist yet, the first user becomes the owner automatically
-        setActiveRole('owner');
-        setActiveEmployeeName(user.displayName || user.email || 'Owner');
-        sessionStorage.setItem('foodics_active_role', 'owner');
-        
-        // Auto-add them to settings
-        if (dbInstance) {
-          const newEmp = { id: Date.now().toString(), name: user.displayName || user.email || 'Owner', email: user.email || '', role: 'owner' as const };
-          const userDocRef = doc(dbInstance, 'store', '8oz_main');
-          setDoc(userDocRef, { settings: { ...settings, employees: [newEmp] }, updatedAt: new Date().toISOString() }, { merge: true });
-        }
-      } else {
-        // Logged in but not in employees list -> auto add as cashier
-        const newEmp = { 
-          id: Date.now().toString(), 
-          name: user.displayName || user.email?.split('@')[0] || 'New Employee', 
-          email: user.email || '', 
-          role: 'cashier' as const 
-        };
-        
-        setActiveRole('cashier');
-        setActiveEmployeeName(newEmp.name);
-        sessionStorage.setItem('foodics_active_role', 'cashier');
+    if (!user || !settings || !isSettingsLoaded) return;
 
-        if (dbInstance) {
-          const userDocRef = doc(dbInstance, 'store', '8oz_main');
-          const currentEmployees = settings.employees || [];
-          setDoc(userDocRef, { 
-            settings: { ...settings, employees: [...currentEmployees, newEmp] }, 
-            updatedAt: new Date().toISOString() 
-          }, { merge: true });
-        }
+    const employee = settings.employees?.find(
+      e => e.email.toLowerCase() === user.email?.toLowerCase()
+    );
+
+    if (employee && employee.status === 'active') {
+      setActiveRole(employee.role);
+      setActiveEmployeeName(employee.name || user.displayName || employee.email);
+      sessionStorage.setItem('foodics_active_role', employee.role);
+      setAccessState('active');
+
+      // Audit trail: record this login (best-effort, non-blocking)
+      if (dbInstance) {
+        addDoc(collection(dbInstance, 'store', '8oz_main', 'auditLog'), {
+          type: 'login',
+          uid: user.uid,
+          email: user.email,
+          role: employee.role,
+          at: new Date().toISOString(),
+        }).catch(() => {});
       }
+      return;
+    }
+
+    setActiveRole(null);
+    setActiveEmployeeName(null);
+    sessionStorage.removeItem('foodics_active_role');
+
+    if (employee && employee.status === 'suspended') {
+      setAccessState('suspended');
+      return;
+    }
+
+    // Not an approved employee: file/refresh an access request so the owner
+    // can see and approve it from Settings. This never grants any role.
+    setAccessState('pending');
+    if (dbInstance && user.uid && user.email) {
+      setDoc(
+        doc(dbInstance, 'store', '8oz_main', 'accessRequests', user.uid),
+        {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || '',
+          requestedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      ).catch(() => {});
     }
   }, [user, settings.employees, dbInstance, isSettingsLoaded]);
+
+  // Pending account access requests, visible to owners/supervisors only
+  // (Firestore rules also enforce this server-side).
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
+  useEffect(() => {
+    if (!dbInstance || !(activeRole === 'owner' || activeRole === 'supervisor')) {
+      setAccessRequests([]);
+      return;
+    }
+    const reqCollectionRef = collection(dbInstance, 'store', '8oz_main', 'accessRequests');
+    const unsubscribe = onSnapshot(
+      reqCollectionRef,
+      (snap) => {
+        const reqs: AccessRequest[] = [];
+        snap.forEach((d) => reqs.push(d.data() as AccessRequest));
+        reqs.sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+        setAccessRequests(reqs);
+      },
+      () => setAccessRequests([])
+    );
+    return () => unsubscribe();
+  }, [dbInstance, activeRole]);
+
+  const approveAccessRequest = (req: AccessRequest, role: 'owner' | 'supervisor' | 'cashier') => {
+    if (!dbInstance) return;
+    const currentEmployees = settings.employees || [];
+    const newEmployee = {
+      id: Date.now().toString(),
+      name: req.name || req.email.split('@')[0],
+      email: req.email,
+      role,
+      status: 'active' as const,
+      createdAt: new Date().toISOString(),
+      approvedAt: new Date().toISOString(),
+      approvedBy: user?.email || '',
+    };
+    const updatedSettings = { ...settings, employees: [...currentEmployees, newEmployee] };
+    handleSaveSettings(updatedSettings);
+    deleteDoc(doc(dbInstance, 'store', '8oz_main', 'accessRequests', req.uid)).catch(() => {});
+    showToast(
+      language === 'ar' ? `تمت الموافقة على ${req.email}` : `Approved ${req.email}`,
+      'success'
+    );
+  };
+
+  const dismissAccessRequest = (req: AccessRequest) => {
+    if (!dbInstance) return;
+    deleteDoc(doc(dbInstance, 'store', '8oz_main', 'accessRequests', req.uid)).catch(() => {});
+    showToast(
+      language === 'ar' ? `تم تجاهل طلب ${req.email}` : `Dismissed request from ${req.email}`,
+      'info'
+    );
+  };
+
+  // Recent login audit trail, visible to owners/supervisors only.
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  useEffect(() => {
+    if (!dbInstance || !(activeRole === 'owner' || activeRole === 'supervisor')) {
+      setAuditLog([]);
+      return;
+    }
+    const auditCollectionRef = collection(dbInstance, 'store', '8oz_main', 'auditLog');
+    const q = query(auditCollectionRef, orderBy('at', 'desc'), limit(50));
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        const entries: AuditLogEntry[] = [];
+        snap.forEach((d) => entries.push(d.data() as AuditLogEntry));
+        setAuditLog(entries);
+      },
+      () => setAuditLog([])
+    );
+    return () => unsubscribe();
+  }, [dbInstance, activeRole]);
 
   // Real-time Firestore Sync
   useEffect(() => {
@@ -690,7 +792,9 @@ export default function App() {
     return <Login language={language} />;
   }
 
-  if (user && activeRole === null && isSettingsLoaded) {
+  // Pending / suspended accounts: never see any app data or role.
+  if (user && isSettingsLoaded && (accessState === 'pending' || accessState === 'suspended')) {
+    const isSuspended = accessState === 'suspended';
     return (
       <div className={`min-h-screen bg-slate-50 flex items-center justify-center p-4 ${language === 'ar' ? 'font-arabic' : ''}`} dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-slate-100 flex flex-col items-center text-center">
@@ -698,12 +802,18 @@ export default function App() {
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-xl font-bold text-slate-900 mb-2">
-            {language === 'ar' ? 'ليس لديك صلاحية' : 'Access Denied'}
+            {isSuspended
+              ? (language === 'ar' ? 'تم إيقاف حسابك' : 'Account Suspended')
+              : (language === 'ar' ? 'بانتظار الموافقة' : 'Pending Approval')}
           </h1>
           <p className="text-sm text-slate-500 mb-6">
-            {language === 'ar' 
-              ? 'الرجاء التواصل مع المدير لإضافة حسابك ومنحك الصلاحيات المناسبة للوصول إلى النظام.'
-              : 'Please contact the manager to add your account and grant you the appropriate permissions.'}
+            {isSuspended
+              ? (language === 'ar'
+                  ? 'تم إيقاف صلاحية الدخول لهذا الحساب. تواصل مع المدير لمزيد من التفاصيل.'
+                  : 'Access for this account has been suspended. Contact the owner for details.')
+              : (language === 'ar'
+                  ? 'حسابك غير مضاف بعد. لا يمكنك رؤية أي بيانات حتى يوافق عليك المدير من صفحة الإعدادات.'
+                  : 'Your account isn\'t added yet. You can\'t see any data until the owner approves you from Settings.')}
           </p>
           <button
             onClick={() => signOut(authInstance)}
@@ -713,6 +823,20 @@ export default function App() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  // Mandatory 2FA: every active account must have an authenticator app
+  // enrolled before it can see any app data. No skip option.
+  if (user && accessState === 'active' && mfaChecked && !mfaEnrolled && authInstance) {
+    return (
+      <MfaEnrollGate
+        auth={authInstance}
+        user={user}
+        language={language}
+        onEnrolled={() => setMfaEnrolled(true)}
+        onSignOut={() => signOut(authInstance)}
+      />
     );
   }
 
@@ -955,6 +1079,11 @@ export default function App() {
               onClearAllData={handleClearAllData}
               language={language}
               showToast={showToast}
+              accessRequests={accessRequests}
+              onApproveAccessRequest={approveAccessRequest}
+              onDismissAccessRequest={dismissAccessRequest}
+              currentUserEmail={user?.email || ''}
+              auditLog={auditLog}
             />
           )}
         </div>

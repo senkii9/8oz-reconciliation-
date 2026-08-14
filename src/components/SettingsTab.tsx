@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AppSettings } from '../types';
+import { AppSettings, AccessRequest, EmployeeStatus, AuditLogEntry } from '../types';
 import { 
   Plus, 
   Trash, 
@@ -22,7 +22,12 @@ import {
   Truck, 
   DollarSign,
   Info,
-  Clock
+  Clock,
+  UserCheck,
+  Pause,
+  Play,
+  X,
+  ShieldQuestion
 } from 'lucide-react';
 import { translations, Language } from '../lib/translations';
 
@@ -33,6 +38,11 @@ interface SettingsTabProps {
   onClearAllData: () => void;
   language: Language;
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
+  accessRequests?: AccessRequest[];
+  onApproveAccessRequest?: (req: AccessRequest, role: 'owner' | 'supervisor' | 'cashier') => void;
+  onDismissAccessRequest?: (req: AccessRequest) => void;
+  currentUserEmail?: string;
+  auditLog?: AuditLogEntry[];
 }
 
 export default function SettingsTab({
@@ -42,7 +52,13 @@ export default function SettingsTab({
   onClearAllData,
   language,
   showToast,
+  accessRequests = [],
+  onApproveAccessRequest,
+  onDismissAccessRequest,
+  currentUserEmail = '',
+  auditLog = [],
 }: SettingsTabProps) {
+  const [requestRoles, setRequestRoles] = useState<Record<string, 'owner' | 'supervisor' | 'cashier'>>({});
   
   const [inputs, setInputs] = useState({
     branch: '',
@@ -145,6 +161,10 @@ export default function SettingsTab({
       email: inputs.employeeEmail.trim(),
       name: inputs.employeeName.trim() || inputs.employeeEmail.split('@')[0],
       role: inputs.employeeRole as 'owner' | 'supervisor' | 'cashier',
+      status: 'active' as EmployeeStatus,
+      createdAt: new Date().toISOString(),
+      approvedAt: new Date().toISOString(),
+      approvedBy: currentUserEmail,
     };
 
     const updatedSettings = {
@@ -188,6 +208,24 @@ export default function SettingsTab({
     triggerToast(
       language === 'ar' ? 'تم تحديث الصلاحية بنجاح' : 'Role updated successfully',
       'success'
+    );
+  };
+
+  const toggleEmployeeStatus = (id: string, name: string, currentStatus: EmployeeStatus) => {
+    const nextStatus: EmployeeStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+    const currentEmployees = settings.employees || [];
+    const updatedSettings = {
+      ...settings,
+      employees: currentEmployees.map(emp =>
+        emp.id === id ? { ...emp, status: nextStatus } : emp
+      ),
+    };
+    onSaveSettings(updatedSettings);
+    triggerToast(
+      nextStatus === 'suspended'
+        ? (language === 'ar' ? `تم إيقاف صلاحية دخول "${name}"` : `Suspended access for "${name}"`)
+        : (language === 'ar' ? `تم إعادة تفعيل "${name}"` : `Reactivated "${name}"`),
+      nextStatus === 'suspended' ? 'info' : 'success'
     );
   };
 
@@ -640,6 +678,63 @@ export default function SettingsTab({
 
       </div>
 
+      {/* Pending Access Requests Section */}
+      {accessRequests.length > 0 && (
+        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-3xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
+                <ShieldQuestion className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+                {language === 'ar' ? 'طلبات دخول بانتظار الموافقة' : 'Pending Access Requests'}
+              </h3>
+            </div>
+            <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">
+              {accessRequests.length} {language === 'ar' ? 'طلب' : 'request(s)'}
+            </span>
+          </div>
+
+          <div className="max-h-72 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50">
+            {accessRequests.map(req => (
+              <div key={req.uid} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 hover:bg-slate-50/50 transition">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-slate-700">{req.name || req.email.split('@')[0]}</span>
+                  <span className="text-[10px] text-slate-500">{req.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={requestRoles[req.uid] || 'cashier'}
+                    onChange={(e) => setRequestRoles(prev => ({ ...prev, [req.uid]: e.target.value as any }))}
+                    className="text-[10px] font-extrabold px-2 py-1.5 rounded-md outline-hidden cursor-pointer border border-slate-200 bg-slate-50 text-slate-600"
+                  >
+                    <option value="cashier">{language === 'ar' ? 'كاشير' : 'Cashier'}</option>
+                    <option value="supervisor">{language === 'ar' ? 'مشرف' : 'Supervisor'}</option>
+                    <option value="owner">{language === 'ar' ? 'مدير' : 'Owner'}</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => onApproveAccessRequest?.(req, requestRoles[req.uid] || 'cashier')}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg transition cursor-pointer"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    {language === 'ar' ? 'موافقة' : 'Approve'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDismissAccessRequest?.(req)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition duration-150 cursor-pointer"
+                    title={language === 'ar' ? 'تجاهل' : 'Dismiss'}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Employees Management Section */}
       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-3xs space-y-4">
         <div className="flex items-center justify-between">
@@ -696,39 +791,105 @@ export default function SettingsTab({
               {language === 'ar' ? 'لا يوجد موظفين مضافين حالياً' : 'No employees added yet.'}
             </div>
           ) : (
-            settings.employees.map(emp => (
-              <div key={emp.id} className="flex justify-between items-center p-3 hover:bg-slate-50/50 transition">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-700">{emp.name || emp.email.split('@')[0]}</span>
-                  <span className="text-[10px] text-slate-500">{emp.email}</span>
+            settings.employees.map(emp => {
+              const status: EmployeeStatus = emp.status || 'active';
+              const isSuspended = status === 'suspended';
+              return (
+                <div key={emp.id} className={`flex justify-between items-center p-3 hover:bg-slate-50/50 transition ${isSuspended ? 'opacity-60' : ''}`}>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-700">{emp.name || emp.email.split('@')[0]}</span>
+                      {isSuspended && (
+                        <span className="text-[9px] font-extrabold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded-md">
+                          {language === 'ar' ? 'موقوف' : 'Suspended'}
+                        </span>
+                      )}
+                      {emp.mfaEnrolled === false && !isSuspended && (
+                        <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md">
+                          {language === 'ar' ? 'بدون 2FA' : 'No 2FA'}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500">{emp.email}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={emp.role}
+                      onChange={(e) => changeEmployeeRole(emp.id, e.target.value as 'owner' | 'supervisor' | 'cashier')}
+                      className={`text-[10px] font-extrabold px-2 py-1 rounded-md outline-hidden cursor-pointer border-0 ${
+                        emp.role === 'owner' ? 'bg-purple-100 text-purple-700' :
+                        emp.role === 'supervisor' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      <option value="owner">{language === 'ar' ? 'مدير' : 'Owner'}</option>
+                      <option value="supervisor">{language === 'ar' ? 'مشرف' : 'Supervisor'}</option>
+                      <option value="cashier">{language === 'ar' ? 'كاشير' : 'Cashier'}</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => toggleEmployeeStatus(emp.id, emp.name || emp.email, status)}
+                      title={isSuspended ? (language === 'ar' ? 'إعادة تفعيل' : 'Reactivate') : (language === 'ar' ? 'إيقاف مؤقت' : 'Suspend')}
+                      className={`p-1.5 rounded-lg transition duration-150 cursor-pointer ${
+                        isSuspended
+                          ? 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                          : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50'
+                      }`}
+                    >
+                      {isSuspended ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeEmployee(emp.id, emp.name || emp.email)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition duration-150 cursor-pointer"
+                    >
+                      <Trash className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <select
-                    value={emp.role}
-                    onChange={(e) => changeEmployeeRole(emp.id, e.target.value as 'owner' | 'supervisor' | 'cashier')}
-                    className={`text-[10px] font-extrabold px-2 py-1 rounded-md outline-hidden cursor-pointer border-0 ${
-                      emp.role === 'owner' ? 'bg-purple-100 text-purple-700' :
-                      emp.role === 'supervisor' ? 'bg-amber-100 text-amber-700' :
-                      'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    <option value="owner">{language === 'ar' ? 'مدير' : 'Owner'}</option>
-                    <option value="supervisor">{language === 'ar' ? 'مشرف' : 'Supervisor'}</option>
-                    <option value="cashier">{language === 'ar' ? 'كاشير' : 'Cashier'}</option>
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeEmployee(emp.id, emp.name || emp.email)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition duration-150 cursor-pointer"
-                  >
-                    <Trash className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
+
+      {/* Login Audit Trail */}
+      {auditLog.length > 0 && (
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-3xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4" />
+              </div>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+                {language === 'ar' ? 'سجل تسجيلات الدخول' : 'Login Audit Trail'}
+              </h3>
+            </div>
+            <span className="text-[10px] font-extrabold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+              {language === 'ar' ? 'آخر 50 عملية' : 'Last 50 events'}
+            </span>
+          </div>
+          <div className="max-h-64 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50">
+            {auditLog.map((entry, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2.5 text-xs">
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-700">{entry.email}</span>
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(entry.at).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                  </span>
+                </div>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                  entry.role === 'owner' ? 'bg-purple-100 text-purple-700' :
+                  entry.role === 'supervisor' ? 'bg-amber-100 text-amber-700' :
+                  'bg-slate-100 text-slate-600'
+                }`}>
+                  {entry.role}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );

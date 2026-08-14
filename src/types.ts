@@ -89,11 +89,33 @@ export interface DailyClosingRecord {
   isDeletedFromLog?: boolean;
 }
 
+export type EmployeeStatus = 'pending' | 'active' | 'suspended';
+
 export interface Employee {
   id: string;
   name: string;
   email: string;
   role: 'owner' | 'supervisor' | 'cashier';
+  status: EmployeeStatus;
+  mfaEnrolled?: boolean;
+  createdAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+}
+
+export interface AccessRequest {
+  uid: string;
+  email: string;
+  name: string;
+  requestedAt: string;
+}
+
+export interface AuditLogEntry {
+  type: 'login';
+  uid: string;
+  email: string;
+  role: 'owner' | 'supervisor' | 'cashier';
+  at: string;
 }
 
 export interface AppSettings {
