@@ -825,6 +825,14 @@ export default function App() {
           >
             {language === 'ar' ? 'تسجيل الخروج' : 'Sign Out'}
           </button>
+
+          {/* TEMPORARY DEBUG PANEL - remove once access issue is resolved */}
+          <div className="mt-6 w-full text-left bg-slate-50 border border-slate-200 rounded-xl p-3 text-[10px] font-mono text-slate-500 break-all">
+            <div className="font-bold text-slate-600 mb-1">DEBUG INFO:</div>
+            <div>signed-in email: "{user.email}"</div>
+            <div>employees loaded: {settings.employees ? settings.employees.length : 'undefined'}</div>
+            <div className="mt-1 whitespace-pre-wrap">{JSON.stringify(settings.employees, null, 1)}</div>
+          </div>
         </div>
       </div>
     );
