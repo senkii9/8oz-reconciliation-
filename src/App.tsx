@@ -179,14 +179,18 @@ export default function App() {
   useEffect(() => {
     if (!user || !settings || !isSettingsLoaded) return;
 
+    // Defensive normalization: manual Firestore console edits are error-prone
+    // (stray spaces, mixed case), so trim/lowercase before comparing.
     const employee = settings.employees?.find(
-      e => e.email.toLowerCase() === user.email?.toLowerCase()
+      e => e.email?.trim().toLowerCase() === user.email?.trim().toLowerCase()
     );
+    const empStatus = employee?.status?.trim().toLowerCase();
+    const empRole = employee?.role?.trim().toLowerCase() as 'owner' | 'supervisor' | 'cashier' | undefined;
 
-    if (employee && employee.status === 'active') {
-      setActiveRole(employee.role);
-      setActiveEmployeeName(employee.name || user.displayName || employee.email);
-      sessionStorage.setItem('foodics_active_role', employee.role);
+    if (employee && empStatus === 'active' && empRole) {
+      setActiveRole(empRole);
+      setActiveEmployeeName((employee.name || '').trim() || user.displayName || employee.email);
+      sessionStorage.setItem('foodics_active_role', empRole);
       setAccessState('active');
 
       // Audit trail: record this login (best-effort, non-blocking)
@@ -195,7 +199,7 @@ export default function App() {
           type: 'login',
           uid: user.uid,
           email: user.email,
-          role: employee.role,
+          role: empRole,
           at: new Date().toISOString(),
         }).catch(() => {});
       }
@@ -206,7 +210,7 @@ export default function App() {
     setActiveEmployeeName(null);
     sessionStorage.removeItem('foodics_active_role');
 
-    if (employee && employee.status === 'suspended') {
+    if (employee && empStatus === 'suspended') {
       setAccessState('suspended');
       return;
     }
