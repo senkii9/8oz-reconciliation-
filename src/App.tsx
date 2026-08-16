@@ -324,17 +324,15 @@ export default function App() {
           setLanguage(data.language);
           localStorage.setItem('foodics_language', data.language);
         }
-      } else {
-        // Doc doesn't exist, seed it with current local settings so they don't lose local customizations!
-        const initialSettings = {
-          settings: settings,
-          language: language,
-          updatedAt: new Date().toISOString()
-        };
-        setDoc(userDocRef, initialSettings, { merge: true }).catch(err => {
-          console.error("Error seeding initial settings to Firestore:", err);
-        });
       }
+      // NOTE: intentionally no "doc doesn't exist -> seed it" fallback here.
+      // That used to write the CURRENT (possibly stale/default/empty) local
+      // React state back to Firestore whenever a snapshot briefly reported
+      // exists:false (e.g. an early cache-only read on a fresh session). With
+      // employees stored as a nested map field, that write fully replaced
+      // settings - silently wiping out real employees/admin data. The store
+      // document is expected to be seeded once, manually, by the owner in
+      // the Firestore console; the app should never auto-write it.
     }, (error) => {
       console.error("Firestore user doc subscription error:", error);
       setIsSettingsLoaded(true);
