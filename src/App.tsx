@@ -624,12 +624,28 @@ export default function App() {
 
   // Save Settings from settings tab
   const handleSaveSettings = (newSettings: AppSettings) => {
-    setSettings(newSettings);
-    localStorage.setItem('foodics_closing_settings', JSON.stringify(newSettings));
+    // Firestore Security Rules can't run arbitrary predicate filters over an
+    // array of maps, so we maintain simple derived string[] lists alongside
+    // the employees array. Rules check membership with the `in` operator.
+    const activeEmployeeEmails = (newSettings.employees || [])
+      .filter(e => (e.status || '').trim().toLowerCase() === 'active')
+      .map(e => e.email.trim().toLowerCase());
+    const adminEmployeeEmails = (newSettings.employees || [])
+      .filter(e => (e.status || '').trim().toLowerCase() === 'active'
+                && ['owner', 'supervisor'].includes((e.role || '').trim().toLowerCase()))
+      .map(e => e.email.trim().toLowerCase());
+    const settingsToSave: AppSettings = {
+      ...newSettings,
+      activeEmployeeEmails,
+      adminEmployeeEmails,
+    };
+
+    setSettings(settingsToSave);
+    localStorage.setItem('foodics_closing_settings', JSON.stringify(settingsToSave));
 
     if (dbInstance) {
       const userDocRef = doc(dbInstance, 'store', '8oz_main');
-      setDoc(userDocRef, { settings: newSettings, updatedAt: new Date().toISOString() }, { merge: true })
+      setDoc(userDocRef, { settings: settingsToSave, updatedAt: new Date().toISOString() }, { merge: true })
         .then(() => {
           showToast(language === 'ar' ? 'تم حفظ الإعدادات ومزامنتها سحابياً بنجاح!' : 'Settings updated and synced to cloud!', 'success');
         })

@@ -127,4 +127,9 @@ export interface AppSettings {
   defaultOpeningFloat: number;
   shifts: string[];
   employees?: Employee[];
+  // Derived, kept in sync automatically whenever employees changes (see
+  // handleSaveSettings). Firestore Security Rules use these flat string
+  // lists with the `in` operator since rules can't filter an array of maps.
+  activeEmployeeEmails?: string[];
+  adminEmployeeEmails?: string[];
 }

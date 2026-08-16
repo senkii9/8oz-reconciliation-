@@ -11,25 +11,23 @@ service cloud.firestore {
       return request.auth.token.email.lower();
     }
 
-    // The employees array lives inside store/{storeId}.settings.employees
+    // The employees array lives inside store/{storeId}.settings.employees,
+    // but Firestore Rules cannot filter an array of maps by predicate. So the
+    // app keeps two flat, always-in-sync string[] lists alongside it:
+    // settings.activeEmployeeEmails and settings.adminEmployeeEmails
+    // (see handleSaveSettings in App.tsx). Rules just check membership.
     function storeDoc(storeId) {
       return get(/databases/$(database)/documents/store/$(storeId));
     }
 
     function isActive(storeId) {
       return isSignedIn()
-        && storeDoc(storeId).data.settings.employees
-             .filter(e => e.email.lower() == callerEmail() && e.status == 'active')
-             .size() > 0;
+        && callerEmail() in storeDoc(storeId).data.settings.activeEmployeeEmails;
     }
 
     function isActiveAdmin(storeId) {
       return isSignedIn()
-        && storeDoc(storeId).data.settings.employees
-             .filter(e => e.email.lower() == callerEmail()
-                       && e.status == 'active'
-                       && (e.role == 'owner' || e.role == 'supervisor'))
-             .size() > 0;
+        && callerEmail() in storeDoc(storeId).data.settings.adminEmployeeEmails;
     }
 
     match /store/{storeId} {
