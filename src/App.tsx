@@ -33,7 +33,6 @@ import DailyLogTab from './components/DailyLogTab';
 import SettingsTab from './components/SettingsTab';
 import { Login } from './components/Login';
 import DashboardTab from './components/DashboardTab';
-import { MfaEnrollGate } from './components/MfaEnrollGate';
 
 // Icons
 import { 
@@ -849,20 +848,6 @@ export default function App() {
           </div>
         </div>
       </div>
-    );
-  }
-
-  // Mandatory 2FA: every active account must have an authenticator app
-  // enrolled before it can see any app data. No skip option.
-  if (user && accessState === 'active' && mfaChecked && !mfaEnrolled && authInstance) {
-    return (
-      <MfaEnrollGate
-        auth={authInstance}
-        user={user}
-        language={language}
-        onEnrolled={() => setMfaEnrolled(true)}
-        onSignOut={() => signOut(authInstance)}
-      />
     );
   }
 
